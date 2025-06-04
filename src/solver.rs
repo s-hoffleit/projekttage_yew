@@ -6,7 +6,7 @@ use crate::{
     types::{ProjektId, SaveFileSchueler, SchuelerId},
 };
 use good_lp::{
-    Expression, ProblemVariables, ResolutionError, Solution, Variable, default_solver,
+    Expression, ProblemVariables, ResolutionError, Solution, default_solver,
     solvers::{SolverModel, microlp::MicroLpSolution},
     variable,
 };
