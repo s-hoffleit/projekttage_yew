@@ -46,7 +46,7 @@ impl Component for Einteilung {
 
         let result = solve_good_lp(projekte, schueler, &feste_zuordnung);
 
-        if let Ok((_solution, _result)) = result {
+        if let Ok(_result) = result {
             log!("RES!");
         } else {
             log!("Couldn't solve!");

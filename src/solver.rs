@@ -6,8 +6,7 @@ use crate::{
     types::{ProjektId, SaveFileSchueler, SchuelerId},
 };
 use good_lp::{
-    Expression, ProblemVariables, ResolutionError, Solution, default_solver,
-    solvers::{SolverModel, microlp::MicroLpSolution},
+    Expression, ProblemVariables, ResolutionError, Solution, default_solver, solvers::SolverModel,
     variable,
 };
 use std::collections::{BTreeMap, HashSet};
@@ -106,7 +105,7 @@ pub fn solve_good_lp(
     projects: &BTreeMap<ProjektId, Projekt>,
     students: &BTreeMap<SchuelerId, SaveFileSchueler>,
     feste_zuordnung: &BTreeMap<SchuelerId, ProjektId>,
-) -> Result<(MicroLpSolution, Vec<Vec<f64>>), ResolutionError> {
+) -> Result<Vec<Vec<f64>>, ResolutionError> {
     web_sys::console::log_1(&"Creating parameters".into());
     let weights = [5.0, 4.0, 3.0, 2.0, 1.0];
     let partner_weight = 2.0;
@@ -344,5 +343,5 @@ pub fn solve_good_lp(
         .map(|y| y.iter().map(|v| solution.value(*v)).collect::<Vec<f64>>())
         .collect::<Vec<_>>();
 
-    Ok((solution, x))
+    Ok(x)
 }
