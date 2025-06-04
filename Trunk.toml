@@ -1,0 +1,4 @@
+[build]
+public_url = "./"
+release = true
+minify = "on_release"

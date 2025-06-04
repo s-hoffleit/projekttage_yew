@@ -1,0 +1,72 @@
+@import "tailwindcss";
+
+@theme {
+    --color-mint-500: oklch(0.72 0.11 178);
+}
+
+@layer base {
+    body {
+        margin: 1rem;
+    }
+}
+
+@layer components {
+    nav {
+        @apply flex flex-1 items-center justify-center flex space-x-4;
+    }
+
+    nav>a {
+        @apply rounded-md px-3 py-2 text-sm font-medium;
+    }
+
+    nav>a[aria-current="page"] {
+        @apply bg-black text-white;
+    }
+
+    nav>a:not([aria-current="page"]) {
+        @apply rounded-md px-3 py-2 text-sm font-medium text-gray-300 hover:bg-gray-700 hover:text-white;
+    }
+}
+
+@layer components {
+
+    .table {
+        @apply min-w-full divide-y divide-gray-200 shadow-md rounded-xl overflow-hidden text-left;
+        @apply dark:divide-gray-700 dark:bg-gray-900;
+    }
+
+    .table thead {
+        @apply bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-200;
+    }
+
+    .table th {
+        @apply px-6 py-3 text-left text-sm font-semibold uppercase tracking-wider;
+    }
+
+    .table tr {
+        @apply hover:bg-gray-50 dark:hover:bg-gray-800 transition;
+    }
+
+    .table td {
+        @apply px-6 py-4 text-sm text-gray-900 dark:text-gray-100;
+    }
+
+    .table-sort::before {
+        content: url('data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"%3E%3Cpath fill="%23888" d="M137.4 41.4c12.5-12.5 32.8-12.5 45.3 0l128 128c9.2 9.2 11.9 22.9 6.9 34.9s-16.6 19.8-29.6 19.8L32 224c-12.9 0-24.6-7.8-29.6-19.8s-2.2-25.7 6.9-34.9l128-128zm0 429.3l-128-128c-9.2-9.2-11.9-22.9-6.9-34.9s16.6-19.8 29.6-19.8l256 0c12.9 0 24.6 7.8 29.6 19.8s2.2 25.7-6.9 34.9l-128 128c-12.5 12.5-32.8 12.5-45.3 0z"/%3E%3C/svg%3E');
+    }
+
+    .table-sort-up::before {
+        content: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 320 512'%3E%3Cpath fill='%23888' d='M182.6 41.4c-12.5-12.5-32.8-12.5-45.3 0l-128 128c-9.2 9.2-11.9 22.9-6.9 34.9s16.6 19.8 29.6 19.8l256 0c12.9 0 24.6-7.8 29.6-19.8s2.2-25.7-6.9-34.9l-128-128z'/%3E%3C/svg%3E");
+    }
+
+    .table-sort-down::before {
+        content: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 320 512'%3E%3Cpath fill='%23ddd' d='M182.6 470.6c-12.5 12.5-32.8 12.5-45.3 0l-128-128c-9.2-9.2-11.9-22.9-6.9-34.9s16.6-19.8 29.6-19.8l256 0c12.9 0 24.6 7.8 29.6 19.8s2.2 25.7-6.9 34.9l-128 128z'/%3E%3C/svg%3E");
+    }
+
+    .table-sortable {
+        display: inline-block;
+        width: .5rem;
+        height: .5rem;
+        margin-inline: .5rem;
+    }
+}
