@@ -106,7 +106,7 @@ pub fn solve_good_lp(
     projects: &BTreeMap<ProjektId, Projekt>,
     students: &BTreeMap<SchuelerId, SaveFileSchueler>,
     feste_zuordnung: &BTreeMap<SchuelerId, ProjektId>,
-) -> Result<(MicroLpSolution, Vec<Vec<Variable>>), ResolutionError> {
+) -> Result<(MicroLpSolution, Vec<Vec<f64>>), ResolutionError> {
     web_sys::console::log_1(&"Creating parameters".into());
     let weights = [5.0, 4.0, 3.0, 2.0, 1.0];
     let partner_weight = 2.0;
@@ -338,6 +338,11 @@ pub fn solve_good_lp(
     // for (i, &count) in wish_hist.iter().enumerate() {
     //     println!("- {}. wish: {} students", i + 1, count);
     // }
+
+    let x = x
+        .iter()
+        .map(|y| y.iter().map(|v| solution.value(*v)).collect::<Vec<f64>>())
+        .collect::<Vec<_>>();
 
     Ok((solution, x))
 }
