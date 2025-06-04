@@ -53,6 +53,9 @@ impl Data {
     pub fn get_schueler(&self, schueler_id: &SchuelerId) -> Option<&SaveFileSchueler> {
         self.schueler.get(schueler_id)
     }
+    pub fn get_projekt(&self, projekt_id: &ProjektId) -> Option<&SaveFileProjekt> {
+        self.projekte.get(projekt_id)
+    }
 }
 
 #[function_component(Secure)]
