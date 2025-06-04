@@ -16,6 +16,7 @@ use crate::types::ProjektId;
 use crate::types::SaveFile;
 use crate::types::SaveFileProjekt;
 use crate::types::SaveFileSchueler;
+use crate::types::SaveFileZuordnung;
 use crate::types::SchuelerId;
 
 pub mod components;
@@ -47,6 +48,7 @@ pub struct Projekt {
 pub struct Data {
     pub projekte: BTreeMap<ProjektId, SaveFileProjekt>,
     pub schueler: BTreeMap<SchuelerId, SaveFileSchueler>,
+    pub zuordnung: Vec<SaveFileZuordnung>,
 }
 
 impl Data {
@@ -87,11 +89,13 @@ fn app() -> Html {
             Data {
                 projekte: save_file.projekte,
                 schueler: save_file.schueler,
+                zuordnung: save_file.zuordnung,
             }
         } else {
             Data {
                 projekte: BTreeMap::new(),
                 schueler: BTreeMap::new(),
+                zuordnung: Vec::new(),
             }
         }
     });

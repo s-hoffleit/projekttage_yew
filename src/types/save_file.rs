@@ -57,11 +57,11 @@ pub struct SaveFileSchueler {
     pub partner: Option<SchuelerId>,
 }
 
-#[derive(Serialize, Deserialize, Clone, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, Debug)]
 pub struct SaveFileZuordnung {
-    id: u32,
-    schueler: SchuelerId,
-    projekt: Option<ProjektId>,
+    pub id: u32,
+    pub schueler: SchuelerId,
+    pub projekt: Option<ProjektId>,
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Eq)]

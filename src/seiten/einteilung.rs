@@ -19,8 +19,15 @@ pub enum Msg {
 
 pub struct Einteilung {
     data: Data,
-    verteilung: HashMap<SchuelerId, ProjektId>,
+    verteilung: HashMap<SchuelerId, Option<ProjektId>>,
     _context_listener: ContextHandle<Data>,
+}
+
+fn get_verteilung(data: &Data) -> HashMap<SchuelerId, Option<ProjektId>> {
+    data.zuordnung
+        .iter()
+        .map(|zuordnung| (zuordnung.schueler, zuordnung.projekt))
+        .collect::<HashMap<SchuelerId, Option<ProjektId>>>()
 }
 
 impl Component for Einteilung {
@@ -36,11 +43,13 @@ impl Component for Einteilung {
 
         log!("CREATE");
 
-        ctx.link().send_message(Msg::Solve(data.clone()));
+        if data.zuordnung.is_empty() {
+            ctx.link().send_message(Msg::Solve(data.clone()));
+        }
 
         Self {
+            verteilung: get_verteilung(&data),
             data,
-            verteilung: HashMap::new(),
             _context_listener: context_listener,
         }
     }
@@ -60,16 +69,10 @@ impl Component for Einteilung {
                 .data_property("schueler_name")
                 .header_class("user-select-none")
                 .build(),
-            ColumnBuilder::new("projekt_id")
+            ColumnBuilder::new("projekt")
                 .orderable(true)
-                .short_name("Projekt ID")
-                .data_property("projekt_id")
-                .header_class("user-select-none")
-                .build(),
-            ColumnBuilder::new("projekt_name")
-                .orderable(true)
-                .short_name("Projekt-Name")
-                .data_property("projekt_name")
+                .short_name("Projekt")
+                .data_property("projekt")
                 .header_class("user-select-none")
                 .build(),
         ];
@@ -99,13 +102,18 @@ impl Component for Einteilung {
                 true
             }
             Msg::Solve(data) => {
-                let result = self.solve(&data);
+                if data.zuordnung == self.data.zuordnung {
+                    let result = self.solve(&data);
 
-                if let Some(verteilung) = result {
-                    self.verteilung = verteilung;
-                    true
+                    if let Some(verteilung) = result {
+                        self.verteilung = verteilung;
+                        true
+                    } else {
+                        false
+                    }
                 } else {
-                    false
+                    self.verteilung = get_verteilung(&data);
+                    true
                 }
             }
         }
@@ -113,7 +121,7 @@ impl Component for Einteilung {
 }
 
 impl Einteilung {
-    pub fn solve(&self, data: &Data) -> Option<HashMap<SchuelerId, ProjektId>> {
+    pub fn solve(&self, data: &Data) -> Option<HashMap<SchuelerId, Option<ProjektId>>> {
         let feste_zuordnung = BTreeMap::new();
 
         let projekte = &data
@@ -139,7 +147,7 @@ impl Einteilung {
                 .map(|(id, (&s_id, _))| (id, s_id))
                 .collect::<HashMap<usize, SchuelerId>>();
 
-            let mut verteilung: HashMap<SchuelerId, ProjektId> = HashMap::new();
+            let mut verteilung: HashMap<SchuelerId, Option<ProjektId>> = HashMap::new();
 
             for (schueler_id, schueler_result) in result.iter().enumerate() {
                 let schueler_id = solver_schueler_id_to_schueler_id.get(&schueler_id);
@@ -149,8 +157,8 @@ impl Einteilung {
                 let projekt_id =
                     projekt_index.and_then(|p_idx| solver_projekte_id_to_projekte_id.get(&p_idx));
 
-                if let (Some(schueler_id), Some(projekt_id)) = (schueler_id, projekt_id) {
-                    verteilung.insert(*schueler_id, *projekt_id);
+                if let Some(schueler_id) = schueler_id {
+                    verteilung.insert(*schueler_id, projekt_id.cloned());
                 }
             }
 
@@ -169,7 +177,7 @@ pub struct EinteilungTableLine {
     pub original_index: usize,
     pub schueler_id: SchuelerId,
     pub schueler_name: String,
-    pub projekt_id: ProjektId,
+    pub projekt_id: Option<ProjektId>,
     pub projekt_name: String,
 }
 
@@ -178,10 +186,14 @@ impl EinteilungTableLine {
         data: &Data,
         idx: usize,
         schueler_id: SchuelerId,
-        projekt_id: ProjektId,
+        projekt_id: Option<ProjektId>,
     ) -> Self {
         let schueler_name = data.get_schueler(&schueler_id).unwrap().name.clone();
-        let projekt_name = data.get_projekt(&projekt_id).unwrap().name.clone();
+        let projekt_name = if let Some(projekt_id) = projekt_id {
+            data.get_projekt(&projekt_id).unwrap().name.clone()
+        } else {
+            String::new()
+        };
 
         Self {
             original_index: idx,
@@ -213,8 +225,13 @@ impl TableData for EinteilungTableLine {
         match field_name {
             "schueler_id" => Ok(html! (<span>{format!("{}", self.schueler_id)}</span>)),
             "schueler_name" => Ok(html! (<span>{format!("{}", self.schueler_name)}</span>)),
-            "projekt_id" => Ok(html! (<span>{format!("{}", self.projekt_id)}</span>)),
-            "projekt_name" => Ok(html! (<span>{format!("{}", self.projekt_name)}</span>)),
+            "projekt" => {
+                if let Some(projekt_id) = self.projekt_id {
+                    Ok(html! (<span>{format!("{}: {}", projekt_id, self.projekt_name)}</span>))
+                } else {
+                    Ok(html!(<span> { "Kein Projekt " } </span>))
+                }
+            }
             _ => Ok(html! {}),
         }
     }
@@ -229,8 +246,10 @@ impl TableData for EinteilungTableLine {
                 self.schueler_id.id()
             ))),
             "schueler_name" => Ok(serde_value::Value::String(self.schueler_name.clone())),
-            "projekt_id" => Ok(serde_value::Value::U32(self.projekt_id.id())),
-            "projekt_name" => Ok(serde_value::Value::String(self.projekt_name.clone())),
+            "projekt" => Ok(serde_value::Value::Option(
+                self.projekt_id
+                    .map(|p_id| Box::new(serde_value::Value::U32(p_id.id()))),
+            )),
             _ => Ok(serde_value::to_value(()).unwrap()),
         }
     }
