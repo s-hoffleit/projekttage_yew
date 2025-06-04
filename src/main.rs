@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 use std::ops::RangeInclusive;
 
 use gloo_console::log;
@@ -45,8 +45,8 @@ pub struct Projekt {
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct Data {
-    pub projekte: HashMap<ProjektId, SaveFileProjekt>,
-    pub schueler: HashMap<SchuelerId, SaveFileSchueler>,
+    pub projekte: BTreeMap<ProjektId, SaveFileProjekt>,
+    pub schueler: BTreeMap<SchuelerId, SaveFileSchueler>,
 }
 
 impl Data {
@@ -87,8 +87,8 @@ fn app() -> Html {
             }
         } else {
             Data {
-                projekte: HashMap::new(),
-                schueler: HashMap::new(),
+                projekte: BTreeMap::new(),
+                schueler: BTreeMap::new(),
             }
         }
     });

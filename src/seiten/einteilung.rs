@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 
 use gloo_console::log;
 use serde::Serialize;
@@ -34,17 +34,17 @@ impl Component for Einteilung {
 
         log!("CREATE");
 
-        let feste_zuordnung = HashMap::new();
+        let feste_zuordnung = BTreeMap::new();
 
-        let result = solve_good_lp(
-            &data
-                .projekte
-                .iter()
-                .map(|(&p_id, project)| (p_id, project.clone().into()))
-                .collect::<HashMap<ProjektId, Projekt>>(),
-            &data.schueler,
-            &feste_zuordnung,
-        );
+        let projekte = &data
+            .projekte
+            .iter()
+            .map(|(&p_id, project)| (p_id, project.clone().into()))
+            .collect::<BTreeMap<ProjektId, Projekt>>();
+
+        let schueler = &data.schueler;
+
+        let result = solve_good_lp(projekte, schueler, &feste_zuordnung);
 
         if let Ok((_solution, _result)) = result {
             log!("RES!");

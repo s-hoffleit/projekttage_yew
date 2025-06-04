@@ -10,7 +10,7 @@ use good_lp::{
     solvers::{SolverModel, microlp::MicroLpSolution},
     variable,
 };
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeMap, HashSet};
 
 // #[wasm_bindgen]
 // pub fn solve_test(projects: JsValue, students: JsValue, feste_zuordnung: JsValue) -> JsValue {
@@ -103,9 +103,9 @@ use std::collections::{HashMap, HashSet};
 // }
 
 pub fn solve_good_lp(
-    projects: &HashMap<ProjektId, Projekt>,
-    students: &HashMap<SchuelerId, SaveFileSchueler>,
-    feste_zuordnung: &HashMap<SchuelerId, ProjektId>,
+    projects: &BTreeMap<ProjektId, Projekt>,
+    students: &BTreeMap<SchuelerId, SaveFileSchueler>,
+    feste_zuordnung: &BTreeMap<SchuelerId, ProjektId>,
 ) -> Result<(MicroLpSolution, Vec<Vec<Variable>>), ResolutionError> {
     web_sys::console::log_1(&"Creating parameters".into());
     let weights = [5.0, 4.0, 3.0, 2.0, 1.0];
@@ -260,7 +260,7 @@ pub fn solve_good_lp(
     }
 
     // 2) Build project → count map
-    let mut project_counts: HashMap<ProjektId, usize> = HashMap::new();
+    let mut project_counts: BTreeMap<ProjektId, usize> = BTreeMap::new();
     for (_ref_student, proj_id) in &student_assignment {
         *project_counts.entry(*proj_id).or_default() += 1;
     }

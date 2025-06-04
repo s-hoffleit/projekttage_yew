@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 
 use gloo_console::log;
 use gloo_storage::{LocalStorage, Storage};
@@ -15,7 +15,7 @@ use crate::{
 pub enum Msg {}
 
 pub struct Projekte {
-    projekte: HashMap<ProjektId, Projekt>,
+    projekte: BTreeMap<ProjektId, Projekt>,
 }
 
 impl Component for Projekte {
@@ -25,11 +25,11 @@ impl Component for Projekte {
 
     fn create(_ctx: &Context<Self>) -> Self {
         Self {
-            projekte: LocalStorage::get::<HashMap<ProjektId, SaveFileProjekt>>("projekte")
+            projekte: LocalStorage::get::<BTreeMap<ProjektId, SaveFileProjekt>>("projekte")
                 .unwrap()
                 .iter()
                 .map(|(&projekt_id, s_f_project)| (projekt_id, s_f_project.clone().into()))
-                .collect::<HashMap<ProjektId, Projekt>>(),
+                .collect::<BTreeMap<ProjektId, Projekt>>(),
         }
     }
 

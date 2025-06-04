@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 
 use gloo_console::log;
 use gloo_storage::{LocalStorage, Storage, errors::StorageError};
@@ -9,7 +9,7 @@ use crate::{
     types::{Klasse, ProjektId, SchuelerId},
 };
 
-#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, Hash)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct SaveFileStufe(u32);
 
 impl SaveFileStufe {
@@ -66,9 +66,9 @@ pub struct SaveFileZuordnung {
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Eq)]
 pub struct SaveFile {
-    pub klassen: HashMap<SaveFileStufe, SaveFileKlasse>,
-    pub projekte: HashMap<ProjektId, SaveFileProjekt>,
-    pub schueler: HashMap<SchuelerId, SaveFileSchueler>,
+    pub klassen: BTreeMap<SaveFileStufe, SaveFileKlasse>,
+    pub projekte: BTreeMap<ProjektId, SaveFileProjekt>,
+    pub schueler: BTreeMap<SchuelerId, SaveFileSchueler>,
     pub zuordnung: Vec<SaveFileZuordnung>,
 }
 
