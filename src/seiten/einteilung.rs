@@ -150,6 +150,10 @@ impl Component for Einteilung {
                         if let Some(result) = result {
                             let mut data = data2.clone();
 
+                            data.projekte
+                                .iter_mut()
+                                .for_each(|(_p_id, p)| p.num_einteilung = None);
+
                             for zuordnung in result.iter() {
                                 if let Some(projekt_id) = zuordnung.projekt {
                                     let projekt = data.projekte.get_mut(&projekt_id);
