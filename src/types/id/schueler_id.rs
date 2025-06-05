@@ -18,4 +18,8 @@ impl SchuelerId {
     pub fn id(&self) -> Uuid {
         self.0
     }
+
+    pub fn new(uuid: Uuid) -> Self {
+        Self(uuid)
+    }
 }

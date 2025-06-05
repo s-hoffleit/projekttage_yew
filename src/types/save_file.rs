@@ -5,11 +5,11 @@ use gloo_storage::{LocalStorage, Storage, errors::StorageError};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    Projekt,
+    Data, Projekt,
     types::{Klasse, ProjektId, SchuelerId},
 };
 
-#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Debug)]
 pub struct SaveFileStufe(u32);
 
 impl SaveFileStufe {
@@ -18,7 +18,7 @@ impl SaveFileStufe {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, Debug)]
 pub struct SaveFileKlasse {
     anzahl: u32,
     klassen: Vec<Klasse>,
@@ -53,6 +53,7 @@ pub struct SaveFileSchueler {
     pub wishes: Option<[ProjektId; 5]>,
     pub partner_raw: Option<String>,
     pub ignore: bool,
+    pub fest: Option<bool>,
     pub klasse: Klasse,
     pub partner: Option<SchuelerId>,
 }
@@ -93,10 +94,21 @@ impl SaveFile {
 
     pub fn load_from_local_storage() -> Result<Self, StorageError> {
         Ok(Self {
-            klassen: LocalStorage::get("klassen")?,
-            projekte: LocalStorage::get("projekte")?,
-            schueler: LocalStorage::get("schueler")?,
-            zuordnung: LocalStorage::get("zuordnung")?,
+            klassen: LocalStorage::get("klassen").unwrap_or(BTreeMap::new()),
+            projekte: LocalStorage::get("projekte").unwrap_or(BTreeMap::new()),
+            schueler: LocalStorage::get("schueler").unwrap_or(BTreeMap::new()),
+            zuordnung: LocalStorage::get("zuordnung").unwrap_or(Vec::new()),
         })
+    }
+}
+
+impl From<SaveFile> for Data {
+    fn from(val: SaveFile) -> Self {
+        Data {
+            projekte: val.projekte,
+            schueler: val.schueler,
+            zuordnung: val.zuordnung,
+            klassen: val.klassen,
+        }
     }
 }

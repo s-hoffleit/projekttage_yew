@@ -1,4 +1,6 @@
 @import "tailwindcss";
+@source "./dist/index.html";
+@plugin "./daisyui/daisyui.js";
 
 @theme {
     --color-mint-500: oklch(0.72 0.11 178);
@@ -6,7 +8,28 @@
 
 @layer base {
     body {
-        margin: 1rem;
+        padding: 1rem;
+        min-height: 100vh;
+    }
+
+    select {
+        @apply select;
+    }
+
+    label {
+        @apply block mb-2 text-sm font-medium text-gray-900 dark:text-white;
+    }
+
+    input[type="file"] {
+        @apply file-input;
+    }
+
+    input[type="text"] {
+        @apply input;
+    }
+
+    button {
+        @apply btn;
     }
 }
 
@@ -25,6 +48,17 @@
 
     nav>a:not([aria-current="page"]) {
         @apply rounded-md px-3 py-2 text-sm font-medium text-gray-300 hover:bg-gray-700 hover:text-white;
+    }
+}
+
+@layer components {
+
+    input[type="text"].partner {
+        @apply bg-lime-200 text-black;
+    }
+
+    input[type="text"].raw_partner {
+        @apply bg-orange-200 text-black;
     }
 }
 

@@ -2,25 +2,33 @@ use std::collections::{BTreeMap, HashMap};
 
 use gloo_console::log;
 use serde::Serialize;
-use yew::{Component, Context, ContextHandle, Html, html};
+use web_sys::{HtmlInputElement, wasm_bindgen::JsCast};
+use yew::{
+    Callback, Component, Context, ContextHandle, ContextProvider, Html, Properties,
+    function_component, html, html::onchange, use_context,
+};
 use yew_custom_components::table::types::{ColumnBuilder, TableData};
 
 use crate::{
-    Data, Projekt,
+    Data, DataContext, Projekt,
     components::Tabelle,
     solver::solve_good_lp,
-    types::{ProjektId, SchuelerId},
+    types::{ProjektId, SaveFileZuordnung, SchuelerId},
 };
 
 pub enum Msg {
-    DataUpdate(Data),
+    DataUpdate(DataContext),
+    DataSet(Data),
+    SolveButton,
     Solve(Data),
+    Edit(SchuelerId, Edit),
 }
 
 pub struct Einteilung {
-    data: Data,
+    data: DataContext,
+    onchange: Callback<(SchuelerId, Edit)>,
+    _context_listener: ContextHandle<DataContext>,
     verteilung: HashMap<SchuelerId, Option<ProjektId>>,
-    _context_listener: ContextHandle<Data>,
 }
 
 fn get_verteilung(data: &Data) -> HashMap<SchuelerId, Option<ProjektId>> {
@@ -38,23 +46,26 @@ impl Component for Einteilung {
     fn create(ctx: &Context<Self>) -> Self {
         let (data, context_listener) = ctx
             .link()
-            .context::<Data>(ctx.link().callback(Msg::DataUpdate))
+            .context::<DataContext>(ctx.link().callback(Msg::DataUpdate))
             .expect("Kein Datenkontext");
 
         log!("CREATE");
 
         if data.zuordnung.is_empty() {
-            ctx.link().send_message(Msg::Solve(data.clone()));
+            ctx.link().send_message(Msg::Solve(data.get()));
         }
 
         Self {
             verteilung: get_verteilung(&data),
+            onchange: ctx
+                .link()
+                .callback(|(schueler_id, edit)| Msg::Edit(schueler_id, edit)),
             data,
             _context_listener: context_listener,
         }
     }
 
-    fn view(&self, _ctx: &Context<Self>) -> Html {
+    fn view(&self, ctx: &Context<Self>) -> Html {
         // Column definition
         let columns = vec![
             ColumnBuilder::new("schueler_id")
@@ -88,25 +99,54 @@ impl Component for Einteilung {
         }
 
         html! {
-            <div class="seite">
-                <Tabelle<EinteilungTableLine> columns={columns} table_data={table_data} />
-            </div>
+            <ContextProvider<Callback<(SchuelerId,Edit)>> context={ self.onchange.clone() }>
+                <div class="seite">
+                    <button onclick={ctx.link().callback(move |_| Msg::SolveButton)}>{"Lösen"}</button>
+                    <Tabelle<EinteilungTableLine> columns={columns} table_data={table_data} />
+                </div>
+            </ContextProvider<Callback<(SchuelerId,Edit)>>>
         }
     }
 
-    fn update(&mut self, _ctx: &Context<Self>, msg: Self::Message) -> bool {
+    fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
         match msg {
             Msg::DataUpdate(data) => {
                 self.data = data;
-                log!("data");
+                let _ = self.data.save();
+
                 true
+            }
+            Msg::DataSet(data) => {
+                self.data.set(data);
+                let _ = self.data.save();
+
+                true
+            }
+            Msg::SolveButton => {
+                ctx.link().send_message(Msg::Solve(self.data.get()));
+                false
             }
             Msg::Solve(data) => {
                 if data.zuordnung == self.data.zuordnung {
                     let result = self.solve(&data);
 
                     if let Some(verteilung) = result {
+                        let mut data = self.data.get();
+
+                        data.zuordnung = verteilung
+                            .iter()
+                            .enumerate()
+                            .map(|(idx, (schueler_id, projekt_id))| SaveFileZuordnung {
+                                id: idx as u32,
+                                schueler: *schueler_id,
+                                projekt: *projekt_id,
+                            })
+                            .collect::<Vec<SaveFileZuordnung>>();
+
+                        ctx.link().send_message(Msg::DataSet(data));
+
                         self.verteilung = verteilung;
+
                         true
                     } else {
                         false
@@ -115,6 +155,31 @@ impl Component for Einteilung {
                     self.verteilung = get_verteilung(&data);
                     true
                 }
+            }
+            Msg::Edit(schueler_id, edit) => {
+                log!("Edit");
+
+                let mut data = self.data.get();
+
+                let zuteilung = data.zuordnung.iter().find(|z| z.schueler == schueler_id);
+
+                if let Some(_zuteilung) = zuteilung {
+                    let mut zuordnungen = data.zuordnung;
+
+                    match edit {
+                        Edit::Projekt { projekt_id } => zuordnungen.iter_mut().for_each(|z| {
+                            if z.schueler == schueler_id {
+                                z.projekt = Some(projekt_id)
+                            }
+                        }),
+                    }
+
+                    data.zuordnung = zuordnungen;
+
+                    ctx.link().send_message(Msg::DataSet(data));
+                }
+
+                true
             }
         }
     }
@@ -188,7 +253,11 @@ impl EinteilungTableLine {
         schueler_id: SchuelerId,
         projekt_id: Option<ProjektId>,
     ) -> Self {
-        let schueler_name = data.get_schueler(&schueler_id).unwrap().name.clone();
+        let schueler_name = data
+            .get_schueler(&schueler_id)
+            .expect("Schueler nicht gefunden")
+            .name
+            .clone();
         let projekt_name = if let Some(projekt_id) = projekt_id {
             data.get_projekt(&projekt_id).unwrap().name.clone()
         } else {
@@ -217,6 +286,53 @@ impl PartialOrd for EinteilungTableLine {
     }
 }
 
+pub enum Edit {
+    Projekt { projekt_id: ProjektId },
+}
+
+#[derive(Properties, PartialEq)]
+struct ProjektSelectProps {
+    schueler_id: SchuelerId,
+    selected: Option<ProjektId>,
+}
+
+#[function_component(ProjektSelect)]
+fn project_selection(props: &ProjektSelectProps) -> Html {
+    let data = use_context::<DataContext>();
+    let on_change = use_context::<Callback<(SchuelerId, Edit)>>();
+
+    if on_change.is_none() {
+        return html!(<></>);
+    }
+
+    let on_change = on_change.unwrap();
+
+    let schueler_id: SchuelerId = props.schueler_id;
+
+    let onchange = Callback::from(move |event: onchange::Event| {
+        let event = event.target();
+        if let Some(event) = event {
+            let projekt_id = event.unchecked_into::<HtmlInputElement>().value().into();
+
+            on_change.emit((schueler_id, Edit::Projekt { projekt_id }))
+        }
+        // on_change.emit(schueler_id, Edit::Wunsch { idx: wunsch_idx, value: () });
+    });
+
+    if let Some(data) = data {
+        html! {
+            <select id="wish_select" { onchange } >
+                { for data.projekte.iter().map(|(p_id, projekt)| html! {
+                    <option value={ format!("{}", p_id.id()) } selected={ props.selected == Some(*p_id) }> {format!("{p_id}: {}", projekt.name.clone())} </option>
+                })}
+                <option value="-1"> { "Kein Wunsch" } </option>
+            </select>
+        }
+    } else {
+        html!( <></> )
+    }
+}
+
 impl TableData for EinteilungTableLine {
     fn get_field_as_html(
         &self,
@@ -225,13 +341,9 @@ impl TableData for EinteilungTableLine {
         match field_name {
             "schueler_id" => Ok(html! (<span>{format!("{}", self.schueler_id)}</span>)),
             "schueler_name" => Ok(html! (<span>{format!("{}", self.schueler_name)}</span>)),
-            "projekt" => {
-                if let Some(projekt_id) = self.projekt_id {
-                    Ok(html! (<span>{format!("{}: {}", projekt_id, self.projekt_name)}</span>))
-                } else {
-                    Ok(html!(<span> { "Kein Projekt " } </span>))
-                }
-            }
+            "projekt" => Ok(
+                html! (<ProjektSelect selected={ self.projekt_id } schueler_id={ self.schueler_id } />),
+            ),
             _ => Ok(html! {}),
         }
     }

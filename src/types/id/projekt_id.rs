@@ -18,3 +18,19 @@ impl ProjektId {
         self.0
     }
 }
+
+impl From<String> for ProjektId {
+    fn from(value: String) -> Self {
+        let id: i32 = str::parse::<i32>(&value).expect("Falsche ProjektId");
+        let id = if id < 0 { u32::MAX } else { id as u32 };
+        Self(id)
+    }
+}
+
+impl std::ops::Sub<u32> for ProjektId {
+    type Output = ProjektId;
+
+    fn sub(self, rhs: u32) -> Self::Output {
+        ProjektId(self.0 - rhs)
+    }
+}

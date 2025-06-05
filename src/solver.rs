@@ -5,6 +5,7 @@ use crate::{
     Projekt,
     types::{ProjektId, SaveFileSchueler, SchuelerId},
 };
+use gloo_console::log;
 use good_lp::{
     Expression, ProblemVariables, ResolutionError, Solution, default_solver, solvers::SolverModel,
     variable,
@@ -217,6 +218,31 @@ pub fn solve_good_lp(
         }
     }
 
+    web_sys::console::log_1(&"Constraint: Stufen".into());
+
+    // Schüler dürfen nur in Projekte, die ihrer Stufe entsprechen, außer sie werden fest zugeordnet
+    for (si, &sid) in student_ids.iter().enumerate() {
+        let student = &students[&sid];
+        for (pj, &pid) in project_ids.iter().enumerate() {
+            let project = &projects[&pid];
+            // Wenn der Schüler nicht fest zugeordnet ist und die Stufe nicht passt
+
+            let stufe = &student.klasse.stufe();
+
+            if stufe.is_none() {
+                continue;
+            }
+            let stufe = stufe.unwrap();
+
+            if !feste_zuordnung.contains_key(&sid)
+                && student.fest != Some(true)
+                && !project.stufen.contains(&stufe)
+            {
+                pb = pb.with(Expression::from(x[si][pj]).eq(0.0));
+            }
+        }
+    }
+
     web_sys::console::log_1(&"Linearizing".into());
 
     // partner linearization
@@ -236,11 +262,22 @@ pub fn solve_good_lp(
         }
     }
 
-    // feste zuordnung: Student 100% in that project
-    for (s, p) in feste_zuordnung.iter() {
-        let s_idx = student_ids.iter().position(|&sid| sid == *s).unwrap();
-        let p_idx = project_ids.iter().position(|&pid| pid == *p).unwrap();
-        pb = pb.with(Expression::from(x[s_idx][p_idx]).eq(1.0));
+    for (s_id, s) in students {
+        if Some(true) == s.fest {
+            let projekt_id = s.wishes.and_then(|w| w.first().cloned());
+
+            if let Some(projekt_id) = projekt_id {
+                let s_idx = student_ids.iter().position(|&sid| sid == *s_id).unwrap();
+                let p_idx = project_ids
+                    .iter()
+                    .position(|&pid| pid == projekt_id)
+                    .unwrap();
+
+                log!(format!("{s_id}: {projekt_id}"));
+
+                pb = pb.with(Expression::from(x[s_idx][p_idx]).eq(1.0))
+            }
+        }
     }
 
     web_sys::console::log_1(&"Solving".into());

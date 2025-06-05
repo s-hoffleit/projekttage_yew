@@ -2,6 +2,9 @@ use std::collections::BTreeMap;
 use std::ops::RangeInclusive;
 
 use gloo_console::log;
+use gloo_storage::LocalStorage;
+use gloo_storage::Storage;
+use gloo_storage::errors::StorageError;
 use serde::Deserialize;
 use serde::Serialize;
 use yew::functional::*;
@@ -14,8 +17,10 @@ use crate::seiten::Projekte;
 use crate::seiten::Schueler;
 use crate::types::ProjektId;
 use crate::types::SaveFile;
+use crate::types::SaveFileKlasse;
 use crate::types::SaveFileProjekt;
 use crate::types::SaveFileSchueler;
+use crate::types::SaveFileStufe;
 use crate::types::SaveFileZuordnung;
 use crate::types::SchuelerId;
 
@@ -49,6 +54,7 @@ pub struct Data {
     pub projekte: BTreeMap<ProjektId, SaveFileProjekt>,
     pub schueler: BTreeMap<SchuelerId, SaveFileSchueler>,
     pub zuordnung: Vec<SaveFileZuordnung>,
+    pub klassen: BTreeMap<SaveFileStufe, SaveFileKlasse>,
 }
 
 impl Data {
@@ -57,6 +63,19 @@ impl Data {
     }
     pub fn get_projekt(&self, projekt_id: &ProjektId) -> Option<&SaveFileProjekt> {
         self.projekte.get(projekt_id)
+    }
+
+    pub fn save(&self) -> Result<(), StorageError> {
+        LocalStorage::set("projekte", self.projekte.clone())?;
+        LocalStorage::set("schueler", self.schueler.clone())?;
+        LocalStorage::set("zuordnung", self.zuordnung.clone())?;
+        LocalStorage::set("klassen", self.klassen.clone())?;
+
+        Ok(())
+    }
+
+    pub fn get(&self) -> Data {
+        self.clone()
     }
 }
 
@@ -73,6 +92,8 @@ fn secure() -> Html {
     }
 }
 
+pub type DataContext = UseStateHandle<Data>;
+
 #[function_component(App)]
 fn app() -> Html {
     let route = use_route::<Route>().unwrap_or_default();
@@ -84,24 +105,33 @@ fn app() -> Html {
         Route::Einteilung => log!("Einteilung"),
     }
 
-    let ctx = use_state(|| {
+    let data = use_state(|| {
         if let Ok(save_file) = SaveFile::load_from_local_storage() {
             Data {
                 projekte: save_file.projekte,
                 schueler: save_file.schueler,
                 zuordnung: save_file.zuordnung,
+                klassen: save_file.klassen,
             }
         } else {
             Data {
                 projekte: BTreeMap::new(),
                 schueler: BTreeMap::new(),
                 zuordnung: Vec::new(),
+                klassen: BTreeMap::new(),
             }
         }
     });
 
+    {
+        let data = data.clone();
+        use_effect_with(data, |data| {
+            let _ = data.save();
+        })
+    }
+
     html! {
-    <ContextProvider<Data> context={(*ctx).clone()}>
+    <ContextProvider<DataContext> context={data}>
         <HashRouter>
             <nav>
                 <Link<Route> to={Route::Home} classes={if route == Route::Home {"current"} else { "" }}>{ "Home" }</Link<Route>>
@@ -111,7 +141,7 @@ fn app() -> Html {
             </nav>
             <Switch<Route> render={switch} />
         </HashRouter>
-    </ContextProvider<Data>>
+    </ContextProvider<DataContext>>
     }
 }
 
