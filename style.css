@@ -57,6 +57,27 @@
 }
 
 @layer components {
+    .table td:has(>span.mindestanzahl) {
+        @apply bg-yellow-300;
+    }
+
+    .table td:has(>span.teilnehmer) {
+        @apply bg-orange-300;
+    }
+
+    .table td:has(>span.voll) {
+        @apply bg-green-300;
+    }
+
+    .table td:has(>span.mindestanzahl),
+    .table td:has(>span.teilnehmer),
+    .table td:has(>span.voll) {
+        @apply text-black
+    }
+
+}
+
+@layer components {
 
     input[type="text"].partner {
         @apply bg-lime-200 text-black;

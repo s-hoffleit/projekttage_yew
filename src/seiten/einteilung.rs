@@ -138,6 +138,20 @@ impl Component for Einteilung {
                         if let Some(result) = result {
                             let mut data = data2.clone();
 
+                            for zuordnung in result.iter() {
+                                if let Some(projekt_id) = zuordnung.projekt {
+                                    let projekt = data.projekte.get_mut(&projekt_id);
+
+                                    if let Some(projekt) = projekt {
+                                        if let Some(num) = projekt.num_einteilung {
+                                            projekt.num_einteilung = Some(num + 1);
+                                        } else {
+                                            projekt.num_einteilung = Some(1)
+                                        }
+                                    }
+                                }
+                            }
+
                             data.zuordnung = result;
 
                             link.send_message(Msg::DataSet(data));

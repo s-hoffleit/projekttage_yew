@@ -47,6 +47,7 @@ pub struct Projekt {
     name: String,
     stufen: RangeInclusive<u32>,
     teilnehmer: RangeInclusive<i32>,
+    num_einteilung: Option<u32>,
 }
 
 impl Projekt {
