@@ -75,6 +75,30 @@
         @apply text-black
     }
 
+    #wish_select.wunsch_0 {
+        @apply bg-emerald-500;
+    }
+
+    #wish_select.wunsch_1 {
+        @apply bg-sky-500;
+    }
+
+    #wish_select.wunsch_2 {
+        @apply bg-violet-500;
+    }
+
+    #wish_select.wunsch_3 {
+        @apply bg-amber-500;
+    }
+
+    #wish_select.wunsch_4 {
+        @apply bg-rose-400;
+    }
+
+    #wish_select.wunsch_5 {
+        @apply bg-zinc-400;
+    }
+
 }
 
 @layer components {

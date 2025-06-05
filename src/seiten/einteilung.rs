@@ -13,7 +13,7 @@ use crate::{
     Data, DataContext, Projekt,
     components::Tabelle,
     solver::solve_good_lp,
-    types::{ProjektId, SaveFileZuordnung, SchuelerId},
+    types::{Klasse, ProjektId, SaveFileZuordnung, SchuelerId},
 };
 
 pub enum Msg {
@@ -74,6 +74,12 @@ impl Component for Einteilung {
                 .data_property("schueler_id")
                 .header_class("user-select-none")
                 .build(),
+            ColumnBuilder::new("schueler_klasse")
+                .orderable(true)
+                .short_name("Klasse")
+                .data_property("schueler_klasse")
+                .header_class("user-select-none")
+                .build(),
             ColumnBuilder::new("schueler_name")
                 .orderable(true)
                 .short_name("Schueler Name")
@@ -84,6 +90,12 @@ impl Component for Einteilung {
                 .orderable(true)
                 .short_name("Projekt")
                 .data_property("projekt")
+                .header_class("user-select-none")
+                .build(),
+            ColumnBuilder::new("wuensche")
+                .orderable(false)
+                .short_name("Wünsche")
+                .data_property("wuensche")
                 .header_class("user-select-none")
                 .build(),
         ];
@@ -257,11 +269,11 @@ pub async fn solve_task(data: Data) -> Option<Vec<SaveFileZuordnung>> {
 
         let mut verteilung: Vec<SaveFileZuordnung> = Vec::new();
 
+        log!("Verteilung done!");
+
         for (schueler_idx, schueler_result) in result.iter().enumerate() {
             let schueler_id = solver_schueler_id_to_schueler_id.get(&schueler_idx);
-            let projekt_index = schueler_result
-                .iter()
-                .position(|wert| (wert - 1.0).abs() <= f64::EPSILON);
+            let projekt_index = schueler_result.iter().position(|wert| wert >= &0.5);
             let projekt_id =
                 projekt_index.and_then(|p_idx| solver_projekte_id_to_projekte_id.get(&p_idx));
 
@@ -287,9 +299,11 @@ pub async fn solve_task(data: Data) -> Option<Vec<SaveFileZuordnung>> {
 pub struct EinteilungTableLine {
     pub original_index: usize,
     pub schueler_id: SchuelerId,
+    pub schueler_klasse: Klasse,
     pub schueler_name: String,
     pub projekt_id: Option<ProjektId>,
     pub projekt_name: String,
+    pub wuensche: Option<[ProjektId; 5]>,
 }
 
 impl EinteilungTableLine {
@@ -299,11 +313,9 @@ impl EinteilungTableLine {
         schueler_id: SchuelerId,
         projekt_id: Option<ProjektId>,
     ) -> Self {
-        let schueler_name = data
+        let schueler = data
             .get_schueler(&schueler_id)
-            .expect("Schueler nicht gefunden")
-            .name
-            .clone();
+            .expect("Schueler nicht gefunden");
         let projekt_name = if let Some(projekt_id) = projekt_id {
             data.get_projekt(&projekt_id).unwrap().name.clone()
         } else {
@@ -313,9 +325,11 @@ impl EinteilungTableLine {
         Self {
             original_index: idx,
             schueler_id,
+            schueler_klasse: schueler.klasse.clone(),
             projekt_id,
-            schueler_name,
+            schueler_name: schueler.name.clone(),
             projekt_name,
+            wuensche: schueler.wishes,
         }
     }
 }
@@ -340,6 +354,7 @@ pub enum Edit {
 struct ProjektSelectProps {
     schueler_id: SchuelerId,
     selected: Option<ProjektId>,
+    class: String,
 }
 
 #[function_component(ProjektSelect)]
@@ -367,7 +382,7 @@ fn project_selection(props: &ProjektSelectProps) -> Html {
 
     if let Some(data) = data {
         html! {
-            <select id="wish_select" { onchange } >
+            <select id="wish_select" { onchange } class={ props.class.clone() } >
                 { for data.projekte.iter().map(|(p_id, projekt)| html! {
                     <option value={ format!("{}", p_id.id()) } selected={ props.selected == Some(*p_id) }> {format!("{p_id}: {}", projekt.name.clone())} </option>
                 })}
@@ -387,9 +402,29 @@ impl TableData for EinteilungTableLine {
         match field_name {
             "schueler_id" => Ok(html! (<span>{format!("{}", self.schueler_id)}</span>)),
             "schueler_name" => Ok(html! (<span>{format!("{}", self.schueler_name)}</span>)),
-            "projekt" => Ok(
-                html! (<ProjektSelect selected={ self.projekt_id } schueler_id={ self.schueler_id } />),
-            ),
+            "projekt" => {
+                let Some(wuensche) = self.wuensche else {
+                    return Ok(
+                        html! (<ProjektSelect selected={ self.projekt_id } schueler_id={ self.schueler_id } class="" />),
+                    );
+                };
+
+                let wunsch_idx = wuensche.iter().position(|w| Some(*w) == self.projekt_id);
+
+                Ok(
+                    html! (<ProjektSelect selected={ self.projekt_id } schueler_id={ self.schueler_id } class={("wunsch_".to_owned() + &wunsch_idx.unwrap_or(5).to_string()).to_string()} />),
+                )
+            }
+            "schueler_klasse" => {
+                Ok(html!(<span>{format!("{}", self.schueler_klasse.klasse())}</span>))
+            }
+            "wuensche" => {
+                let Some(wuensche) = self.wuensche else {
+                    return Ok(html!(<span>{"---"}</span>));
+                };
+
+                Ok(html!(<span>{wuensche.map(|w| w.to_string()).join(", ")}</span>))
+            }
             _ => Ok(html! {}),
         }
     }
@@ -407,6 +442,9 @@ impl TableData for EinteilungTableLine {
             "projekt" => Ok(serde_value::Value::Option(
                 self.projekt_id
                     .map(|p_id| Box::new(serde_value::Value::U32(p_id.id()))),
+            )),
+            "schueler_klasse" => Ok(serde_value::Value::U32(
+                self.schueler_klasse.stufe().unwrap_or(0),
             )),
             _ => Ok(serde_value::to_value(()).unwrap()),
         }
