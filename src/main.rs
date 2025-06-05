@@ -47,6 +47,25 @@ pub struct Projekt {
     name: String,
     stufen: RangeInclusive<u32>,
     teilnehmer: RangeInclusive<i32>,
+    num_einteilung: Option<u32>,
+}
+
+impl Projekt {
+    pub fn get_min_teilnehmer(&self) -> i32 {
+        if self.teilnehmer.start() != &-1 {
+            *self.teilnehmer.start()
+        } else {
+            0
+        }
+    }
+
+    pub fn get_max_teilnehmer(&self) -> i32 {
+        if self.teilnehmer.end() != &-1 {
+            *self.teilnehmer.end()
+        } else {
+            i32::MAX
+        }
+    }
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]

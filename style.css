@@ -57,6 +57,51 @@
 }
 
 @layer components {
+    .table td:has(>span.mindestanzahl) {
+        @apply bg-orange-300;
+    }
+
+    .table td:has(>span.teilnehmer) {
+        @apply bg-green-300;
+    }
+
+    .table td:has(>span.voll) {
+        @apply bg-purple-300;
+    }
+
+    .table td:has(>span.mindestanzahl),
+    .table td:has(>span.teilnehmer),
+    .table td:has(>span.voll) {
+        @apply text-black
+    }
+
+    #wish_select.wunsch_0 {
+        @apply bg-emerald-500;
+    }
+
+    #wish_select.wunsch_1 {
+        @apply bg-sky-500;
+    }
+
+    #wish_select.wunsch_2 {
+        @apply bg-violet-500;
+    }
+
+    #wish_select.wunsch_3 {
+        @apply bg-amber-500;
+    }
+
+    #wish_select.wunsch_4 {
+        @apply bg-rose-400;
+    }
+
+    #wish_select.wunsch_5 {
+        @apply bg-zinc-400;
+    }
+
+}
+
+@layer components {
 
     input[type="text"].partner {
         @apply bg-lime-200 text-black;

@@ -141,6 +141,14 @@ pub fn solve_good_lp(
         if student.partner.is_some() {
             // partner holds student ID, rename to partner_id
             if let Some(&partner_id) = student.partner.as_ref() {
+                if students
+                    .get(&partner_id)
+                    .and_then(|partner| partner.partner)
+                    != Some(sid)
+                {
+                    continue;
+                }
+
                 let (i, j) = if sid.id() < partner_id.id() {
                     (sid, partner_id)
                 } else {
@@ -251,16 +259,20 @@ pub fn solve_good_lp(
         let svar = same[k];
         let sum_w = wrow.iter().cloned().sum::<Expression>();
         pb = pb.with(Expression::from(svar).leq(sum_w));
+
         for (pj, &_p_id) in project_ids.iter().enumerate() {
             let xi = x[student_ids.iter().position(|&sid| sid == i).unwrap()][pj];
             let xj = x[student_ids.iter().position(|&sid| sid == j).unwrap()][pj];
             let wij = wrow[pj];
+
             pb = pb
                 .with(Expression::from(wij).leq(xi))
                 .with(Expression::from(wij).leq(xj))
                 .with((xi + xj - 1.0).leq(wij));
         }
     }
+
+    web_sys::console::log_1(&"Feste Zuordnung".into());
 
     for (s_id, s) in students {
         if Some(true) == s.fest {
@@ -284,6 +296,8 @@ pub fn solve_good_lp(
 
     let solution = pb.solve()?;
 
+    web_sys::console::log_1(&"Solved".into());
+
     // 1) Build student → project map
     let mut student_assignment: Vec<(SchuelerId, ProjektId)> = Vec::new();
     for (s_idx, (&s_uuid, _student)) in students.iter().enumerate() {
@@ -303,17 +317,24 @@ pub fn solve_good_lp(
 
     // 3) Build wish‐rank histogram
     let mut wish_hist: [usize; 5] = [0; 5];
+    let mut not_wished_projects: usize = 0;
     for (sid, (&_s_idx, student)) in students.iter().enumerate() {
         if let Some(wishes) = student.wishes {
+            let mut in_wishes = false;
+
             for (wish_rank, &wish_pid) in wishes.iter().enumerate() {
                 let p_idx = project_ids.iter().position(|&id| id == wish_pid);
                 if let Some(p_idx) = p_idx {
                     // Check if the student is assigned to the project
                     if solution.value(x[sid][p_idx]) > 0.5 {
                         wish_hist[wish_rank] += 1;
+                        in_wishes = true;
                         break;
                     }
                 }
+            }
+            if !in_wishes {
+                not_wished_projects += 1
             }
         }
     }
@@ -360,20 +381,31 @@ pub fn solve_good_lp(
     // }
     // println!();
 
-    // // 2) Projects and how many students each got
-    // println!("Project Loads:");
-    // for pid in &project_ids {
-    //     let name = &projects[pid].name;
-    //     let count = project_counts.get(name).copied().unwrap_or(0);
-    //     println!("- {:<20} : {} students", name, count);
-    // }
-    // println!();
+    // 2) Projects and how many students each got
+    log!("Project Loads:");
+    for pid in &project_ids {
+        let count = project_counts.get(pid).copied().unwrap_or(0);
 
-    // // 3) Wish‐rank histogram
-    // println!("Wish Satisfaction:");
-    // for (i, &count) in wish_hist.iter().enumerate() {
-    //     println!("- {}. wish: {} students", i + 1, count);
-    // }
+        let projekt = projects.get(pid);
+
+        if let Some(projekt) = projekt {
+            log!(format!(
+                "- {:<20} : {} Schueler von {}-{}",
+                projekt.name,
+                count,
+                projekt.get_min_teilnehmer(),
+                projekt.get_max_teilnehmer()
+            ));
+        }
+    }
+    println!();
+
+    // 3) Wish‐rank histogram
+    log!("Wish Satisfaction:");
+    for (i, &count) in wish_hist.iter().enumerate() {
+        log!(format!("- {}. wish: {} students", i + 1, count));
+    }
+    log!(format!("not-wished: {} schueler", not_wished_projects));
 
     let x = x
         .iter()

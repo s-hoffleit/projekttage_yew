@@ -34,6 +34,7 @@ pub struct SaveFileProjekt {
     pub min_stufe: u32,
     pub max_stufe: u32,
     pub ignore: bool,
+    pub num_einteilung: Option<u32>,
 }
 
 impl From<SaveFileProjekt> for Projekt {
@@ -42,6 +43,7 @@ impl From<SaveFileProjekt> for Projekt {
             name: val.name,
             stufen: (val.min_stufe..=val.max_stufe),
             teilnehmer: (val.min_teilnehmer..=val.max_teilnehmer),
+            num_einteilung: val.num_einteilung,
         }
     }
 }

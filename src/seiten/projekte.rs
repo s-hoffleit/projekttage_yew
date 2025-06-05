@@ -3,7 +3,7 @@ use std::collections::BTreeMap;
 use gloo_console::log;
 use gloo_storage::{LocalStorage, Storage};
 use serde::Serialize;
-use yew::{Component, Context, Html, html, use_effect};
+use yew::{Component, Context, Html, classes, html, use_effect};
 use yew_custom_components::table::types::{ColumnBuilder, TableData};
 
 use crate::{
@@ -101,6 +101,12 @@ impl Component for Projekte {
                 .data_property("max_teilnehmer")
                 .header_class("user-select-none")
                 .build(),
+            ColumnBuilder::new("num_einteilung")
+                .orderable(false)
+                .short_name("Anzahl Schueler nach Einteilung")
+                .data_property("num_einteilung")
+                .header_class("user-select-none")
+                .build(),
         ];
 
         let mut table_data = Vec::new();
@@ -113,6 +119,7 @@ impl Component for Projekte {
                 max_stufe: *projekt.stufen.end(),
                 min_teilnehmer: *projekt.teilnehmer.start(),
                 max_teilnehmer: *projekt.teilnehmer.end(),
+                num_einteilung: projekt.num_einteilung,
             });
         }
 
@@ -133,6 +140,7 @@ pub struct ProjektTableLine {
     pub max_stufe: u32,
     pub min_teilnehmer: i32,
     pub max_teilnehmer: i32,
+    pub num_einteilung: Option<u32>,
 }
 
 impl PartialEq<Self> for ProjektTableLine {
@@ -159,6 +167,21 @@ impl TableData for ProjektTableLine {
             "max_stufe" => Ok(html! (<span>{self.max_stufe}</span>)),
             "min_teilnehmer" => Ok(html! (<span>{self.min_teilnehmer}</span>)),
             "max_teilnehmer" => Ok(html! (<span>{self.max_teilnehmer}</span>)),
+            "num_einteilung" => {
+                let classes = if self.num_einteilung == Some(self.max_teilnehmer as u32) {
+                    classes!("voll")
+                } else if self.num_einteilung == Some(self.min_teilnehmer as u32) {
+                    classes!("mindestanzahl")
+                } else if self.num_einteilung.is_none() {
+                    classes!("keine_einteilung")
+                } else {
+                    classes!("teilnehmer")
+                };
+
+                Ok(
+                    html! (<span class={classes}>{self.num_einteilung.map(|n| n.to_string()).unwrap_or("---".to_string())}</span>),
+                )
+            }
             _ => Ok(html! {}),
         }
     }
@@ -174,6 +197,7 @@ impl TableData for ProjektTableLine {
             "max_stufe" => Ok(serde_value::Value::U32(self.max_stufe)),
             "min_teilnehmer" => Ok(serde_value::Value::I32(self.min_teilnehmer)),
             "max_teilnehmer" => Ok(serde_value::Value::I32(self.max_teilnehmer)),
+            "num_einteilung" => Ok(serde_value::Value::U32(self.num_einteilung.unwrap_or(0))),
             _ => Ok(serde_value::to_value(()).unwrap()),
         }
     }

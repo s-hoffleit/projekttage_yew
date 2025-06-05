@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-gloo = "0.11.0"
+gloo = { version = "0.11.0", features = ["worker", "futures", "timers"] }
 gloo-console = "0.3.0"
 gloo-file = "0.3.0"
 gloo-storage = "0.3.0"

@@ -72,7 +72,7 @@ fn project_selection(props: &ProjektSelectProps) -> Html {
                 { for data.projekte.iter().map(|(p_id, projekt)| html! {
                     <option value={ format!("{}", p_id.id()) } selected={ props.selected == Some(*p_id) }> {format!("{p_id}: {}", projekt.name.clone())} </option>
                 })}
-                <option value="-1"> { "Kein Wunsch" } </option>
+                <option value="-1" selected={ props.selected.is_none() || props.selected.map(|p_id| p_id.id()) == Some(u32::MAX) }> { "Kein Wunsch" } </option>
             </select>
         }
     } else {
@@ -605,7 +605,7 @@ impl TableData for SchuelerTableLine {
             "id" => Ok(serde_value::Value::String(
                 self.id.id().as_hyphenated().to_string(),
             )),
-            "klasse" => Ok(serde_value::Value::String(self.klasse.klasse())),
+            "klasse" => Ok(serde_value::Value::U32(self.klasse.stufe().unwrap_or(0))),
             "name" => Ok(serde_value::Value::String(self.name.clone())),
             w if w.starts_with("wunsch") => Ok(serde_value::Value::Option(
                 self.wuensche[w
