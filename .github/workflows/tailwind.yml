@@ -1,0 +1,50 @@
+name: Deploy with Tailwind v4.1.8
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          target: wasm32-unknown-unknown
+          profile: minimal
+          override: true
+
+      - name: Install Trunk
+        uses: jetli/trunk-action@v0.4.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Tailwind CSS v4.1.8
+        run: |
+          npm install -D tailwindcss@4.1.8
+          echo "TAILWIND_BIN=$(pwd)/node_modules/.bin/tailwindcss" >> $GITHUB_ENV
+
+      - name: Build with Trunk and Tailwind 4.1.8
+        env:
+          TRUNK_TAILWIND_BIN: ${{ env.TAILWIND_BIN }}
+        run: |
+          trunk build --release --public-url /${{ github.event.repository.name }}/ --verbose
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./dist
