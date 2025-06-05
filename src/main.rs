@@ -49,6 +49,24 @@ pub struct Projekt {
     teilnehmer: RangeInclusive<i32>,
 }
 
+impl Projekt {
+    pub fn get_min_teilnehmer(&self) -> i32 {
+        if self.teilnehmer.start() != &-1 {
+            *self.teilnehmer.start()
+        } else {
+            0
+        }
+    }
+
+    pub fn get_max_teilnehmer(&self) -> i32 {
+        if self.teilnehmer.end() != &-1 {
+            *self.teilnehmer.end()
+        } else {
+            i32::MAX
+        }
+    }
+}
+
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct Data {
     pub projekte: BTreeMap<ProjektId, SaveFileProjekt>,
