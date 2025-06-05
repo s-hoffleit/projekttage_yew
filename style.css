@@ -58,15 +58,15 @@
 
 @layer components {
     .table td:has(>span.mindestanzahl) {
-        @apply bg-yellow-300;
-    }
-
-    .table td:has(>span.teilnehmer) {
         @apply bg-orange-300;
     }
 
-    .table td:has(>span.voll) {
+    .table td:has(>span.teilnehmer) {
         @apply bg-green-300;
+    }
+
+    .table td:has(>span.voll) {
+        @apply bg-purple-300;
     }
 
     .table td:has(>span.mindestanzahl),
