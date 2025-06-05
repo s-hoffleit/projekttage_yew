@@ -5,7 +5,7 @@ use serde::Serialize;
 use web_sys::{HtmlInputElement, wasm_bindgen::JsCast};
 use yew::{
     Callback, Component, Context, ContextHandle, ContextProvider, Html, Properties,
-    function_component, html, html::onchange, use_context,
+    function_component, html, html::onchange, platform::spawn_local, use_context,
 };
 use yew_custom_components::table::types::{ColumnBuilder, TableData};
 
@@ -128,29 +128,57 @@ impl Component for Einteilung {
             }
             Msg::Solve(data) => {
                 if data.zuordnung == self.data.zuordnung {
-                    let result = self.solve(&data);
+                    log!("Solve111!");
 
-                    if let Some(verteilung) = result {
-                        let mut data = self.data.get();
+                    let link = ctx.link().clone();
 
-                        data.zuordnung = verteilung
-                            .iter()
-                            .enumerate()
-                            .map(|(idx, (schueler_id, projekt_id))| SaveFileZuordnung {
-                                id: idx as u32,
-                                schueler: *schueler_id,
-                                projekt: *projekt_id,
-                            })
-                            .collect::<Vec<SaveFileZuordnung>>();
+                    let data2 = data.clone();
 
-                        ctx.link().send_message(Msg::DataSet(data));
+                    let callback = Callback::from(move |result: Option<Vec<SaveFileZuordnung>>| {
+                        if let Some(result) = result {
+                            let mut data = data2.clone();
 
-                        self.verteilung = verteilung;
+                            data.zuordnung = result;
 
-                        true
-                    } else {
-                        false
-                    }
+                            link.send_message(Msg::DataSet(data));
+                        }
+                    });
+
+                    spawn_local(async move {
+                        let data = data.clone();
+
+                        let a = solve_task(data);
+
+                        let result = a.await;
+
+                        callback.emit(result);
+                    });
+
+                    // let result = self.solve(&data);
+
+                    // if let Some(verteilung) = result {
+                    //     let mut data = self.data.get();
+
+                    //     data.zuordnung = verteilung
+                    //         .iter()
+                    //         .enumerate()
+                    //         .map(|(idx, (schueler_id, projekt_id))| SaveFileZuordnung {
+                    //             id: idx as u32,
+                    //             schueler: *schueler_id,
+                    //             projekt: *projekt_id,
+                    //         })
+                    //         .collect::<Vec<SaveFileZuordnung>>();
+
+                    //     ctx.link().send_message(Msg::DataSet(data));
+
+                    //     self.verteilung = verteilung;
+
+                    //     true
+                    // } else {
+                    //     false
+                    // }
+
+                    false
                 } else {
                     self.verteilung = get_verteilung(&data);
                     true
@@ -185,55 +213,59 @@ impl Component for Einteilung {
     }
 }
 
-impl Einteilung {
-    pub fn solve(&self, data: &Data) -> Option<HashMap<SchuelerId, Option<ProjektId>>> {
-        let feste_zuordnung = BTreeMap::new();
+pub async fn solve_task(data: Data) -> Option<Vec<SaveFileZuordnung>> {
+    log!("Start solve!");
 
-        let projekte = &data
-            .projekte
+    let feste_zuordnung = BTreeMap::new();
+
+    let projekte = &data
+        .projekte
+        .iter()
+        .map(|(&p_id, project)| (p_id, project.clone().into()))
+        .collect::<BTreeMap<ProjektId, Projekt>>();
+
+    let schueler = &data.schueler;
+
+    let result = solve_good_lp(projekte, schueler, &feste_zuordnung);
+
+    if let Ok(result) = result {
+        let solver_projekte_id_to_projekte_id = projekte
             .iter()
-            .map(|(&p_id, project)| (p_id, project.clone().into()))
-            .collect::<BTreeMap<ProjektId, Projekt>>();
+            .enumerate()
+            .map(|(id, (&p_id, _))| (id, p_id))
+            .collect::<HashMap<usize, ProjektId>>();
 
-        let schueler = &data.schueler;
+        let solver_schueler_id_to_schueler_id = schueler
+            .iter()
+            .enumerate()
+            .map(|(id, (&s_id, _))| (id, s_id))
+            .collect::<HashMap<usize, SchuelerId>>();
 
-        let result = solve_good_lp(projekte, schueler, &feste_zuordnung);
+        let mut verteilung: Vec<SaveFileZuordnung> = Vec::new();
 
-        if let Ok(result) = result {
-            let solver_projekte_id_to_projekte_id = projekte
+        for (schueler_idx, schueler_result) in result.iter().enumerate() {
+            let schueler_id = solver_schueler_id_to_schueler_id.get(&schueler_idx);
+            let projekt_index = schueler_result
                 .iter()
-                .enumerate()
-                .map(|(id, (&p_id, _))| (id, p_id))
-                .collect::<HashMap<usize, ProjektId>>();
+                .position(|wert| (wert - 1.0).abs() <= f64::EPSILON);
+            let projekt_id =
+                projekt_index.and_then(|p_idx| solver_projekte_id_to_projekte_id.get(&p_idx));
 
-            let solver_schueler_id_to_schueler_id = schueler
-                .iter()
-                .enumerate()
-                .map(|(id, (&s_id, _))| (id, s_id))
-                .collect::<HashMap<usize, SchuelerId>>();
-
-            let mut verteilung: HashMap<SchuelerId, Option<ProjektId>> = HashMap::new();
-
-            for (schueler_id, schueler_result) in result.iter().enumerate() {
-                let schueler_id = solver_schueler_id_to_schueler_id.get(&schueler_id);
-                let projekt_index = schueler_result
-                    .iter()
-                    .position(|wert| (wert - 1.0).abs() <= f64::EPSILON);
-                let projekt_id =
-                    projekt_index.and_then(|p_idx| solver_projekte_id_to_projekte_id.get(&p_idx));
-
-                if let Some(schueler_id) = schueler_id {
-                    verteilung.insert(*schueler_id, projekt_id.cloned());
-                }
+            if let Some(schueler_id) = schueler_id {
+                verteilung.push(SaveFileZuordnung {
+                    id: schueler_idx as u32,
+                    schueler: *schueler_id,
+                    projekt: projekt_id.cloned(),
+                });
             }
-
-            log!("RES!");
-
-            Some(verteilung)
-        } else {
-            log!("Couldn't solve!");
-            None
         }
+
+        log!("Solved!");
+
+        Some(verteilung)
+    } else {
+        log!("Couldn't solve!");
+        None
     }
 }
 
