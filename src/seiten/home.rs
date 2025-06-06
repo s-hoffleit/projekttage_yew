@@ -210,7 +210,7 @@ impl Component for Home {
                 let data = self.data.get();
                 let zuordnungen = data.clone().zuordnung;
 
-                let mut csv_string = "ID;Schueler;Projekt".to_string();
+                let mut csv_string = "ID;Schueler;Wünsche;Projekt".to_string();
 
                 for zuordnung in zuordnungen {
                     let schueler = data.get_schueler(&zuordnung.schueler).unwrap();
@@ -218,10 +218,28 @@ impl Component for Home {
                     let projekt = data.get_projekt(&zuordnung.projekt.unwrap()).unwrap();
 
                     csv_string += format!(
-                        "\n{};{} ({});{}: {} ({}-{})",
+                        "\n{};{} ({});{};{}: {} ({}-{})",
                         zuordnung.id,
                         schueler.name,
                         schueler.klasse.klasse(),
+                        schueler
+                            .wishes
+                            .map(|wishes| wishes
+                                .iter()
+                                .filter_map(|w| if w.id() != u32::MAX {
+                                    Some(format!(
+                                        "{}: {}",
+                                        w.id(),
+                                        data.get_projekt(w)
+                                            .map(|p| p.name.as_str())
+                                            .unwrap_or("---")
+                                    ))
+                                } else {
+                                    None
+                                })
+                                .collect::<Vec<String>>()
+                                .join(", "))
+                            .unwrap_or("---".to_string()),
                         zuordnung
                             .projekt
                             .map(|p_id| p_id.id().to_string())
