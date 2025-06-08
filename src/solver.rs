@@ -223,8 +223,22 @@ pub fn solve_good_lp(
     for (pj, &pid) in project_ids.iter().enumerate() {
         let proj = &projects[&pid];
         let sum_p = (0..n).map(|si| x[si][pj]).sum::<Expression>();
+
+        let feste_schueler = students
+            .iter()
+            .filter(|(_s_id, s)| {
+                s.fest
+                    .and_then(|fest| s.wishes.map(|w| fest && w[0] == pid))
+                    .unwrap_or(false)
+            })
+            .count() as i32;
+
         if *proj.teilnehmer.end() != -1 {
-            pb = pb.with(sum_p.clone().leq(*proj.teilnehmer.end() as f64))
+            pb = pb.with(
+                sum_p
+                    .clone()
+                    .leq((*proj.teilnehmer.end() + feste_schueler) as f64),
+            )
         }
         if *proj.teilnehmer.start() != -1 {
             pb = pb.with(sum_p.geq(Expression::from(*proj.teilnehmer.start() as f64)));
