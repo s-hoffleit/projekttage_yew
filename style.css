@@ -102,9 +102,12 @@
 }
 
 @layer components {
-
-    input[type="text"].partner {
+    input[type="text"].partner.partner_ok {
         @apply bg-lime-200 text-black;
+    }
+
+    input[type="text"].partner.partner_error {
+        @apply bg-yellow-200 text-black;
     }
 
     input[type="text"].raw_partner {

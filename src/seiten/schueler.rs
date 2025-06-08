@@ -405,7 +405,7 @@ impl Component for Schueler {
                 wuensche: get_wuensche(schueler, &self.data),
                 partner: schueler.partner.map(|p| {
                     let partner = self.data.get_schueler(&p).unwrap().clone();
-                    (p, partner.name, partner.klasse)
+                    (p, partner.name, partner.klasse, partner.partner)
                 }),
                 partner_raw: schueler.partner_raw.clone(),
                 fest: schueler.fest.unwrap_or(false),
@@ -485,7 +485,7 @@ pub struct SchuelerTableLine {
     pub klasse: Klasse,
     pub name: String,
     pub wuensche: [Option<(ProjektId, String)>; 5],
-    pub partner: Option<(SchuelerId, String, Klasse)>,
+    pub partner: Option<(SchuelerId, String, Klasse, Option<SchuelerId>)>,
     pub partner_raw: Option<String>,
     pub fest: bool,
     pub ignorieren: bool,
@@ -543,7 +543,7 @@ fn checkbox(props: &CheckboxProps) -> Html {
 #[derive(Properties, PartialEq)]
 struct PartnerProps {
     schueler: SchuelerId,
-    partner: Option<(SchuelerId, String, Klasse)>,
+    partner: Option<(SchuelerId, String, Klasse, Option<SchuelerId>)>,
     partner_raw: Option<String>,
 }
 
@@ -569,10 +569,10 @@ fn partner(props: &PartnerProps) -> Html {
         // on_change.emit(schueler_id, Edit::Wunsch { idx: wunsch_idx, value: () });
     });
 
-    if let Some((_id, partner_name, partner_klasse)) = props.partner.clone() {
-        html! (<span><input type="text" class={classes!("partner")} value={format!("{} ({})", partner_name, partner_klasse.klasse())} { onchange } list="schueler_datalist" /></span>)
+    if let Some((_id, partner_name, partner_klasse, partner_partner)) = props.partner.clone() {
+        html! (<span><input type="text" class={classes!("partner", partner_partner.and_then(|p| if p == schueler_id { Some("partner_ok") } else { None }).unwrap_or("partner_error"))} value={format!("{} ({})", partner_name, partner_klasse.klasse())} { onchange } list="schueler_datalist" title={props.partner_raw.clone()} /></span>)
     } else {
-        html! (<span><input type="text" class={classes!("raw_partner")} value={props.partner_raw.clone()} { onchange } list="schueler_datalist" /></span>)
+        html! (<span><input type="text" class={classes!("raw_partner")} value={props.partner_raw.clone().unwrap_or(" ".to_string())} { onchange } list="schueler_datalist" /></span>)
     }
 }
 
