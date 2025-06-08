@@ -208,8 +208,13 @@ pub fn solve_good_lp(
     web_sys::console::log_1(&"Constraint: Student limit".into());
 
     // each student exactly one
-    for student_projects in &x {
-        pb = pb.with(student_projects.iter().cloned().sum::<Expression>().eq(1.0));
+    for (student_projects, (_schueler_id, schueler)) in x.iter().zip(students.iter()) {
+        if schueler.ignore {
+            log!(format!("Ignore: {}", schueler.name));
+            pb = pb.with(student_projects.iter().cloned().sum::<Expression>().eq(0.0));
+        } else {
+            pb = pb.with(student_projects.iter().cloned().sum::<Expression>().eq(1.0));
+        }
     }
 
     web_sys::console::log_1(&"Constraint: Proj. cap".into());
