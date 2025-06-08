@@ -6,8 +6,8 @@ use serde::Serialize;
 use unicode_normalization::UnicodeNormalization;
 use web_sys::{HtmlInputElement, wasm_bindgen::JsCast};
 use yew::{
-    Callback, Component, Context, ContextHandle, ContextProvider, Html, Properties, UseStateHandle,
-    classes, function_component, html, html::onchange, use_context,
+    AttrValue, Callback, Component, Context, ContextHandle, ContextProvider, Html, Properties,
+    UseStateHandle, classes, function_component, html, html::onchange, use_context,
 };
 use yew_custom_components::table::types::{ColumnBuilder, TableData};
 
@@ -26,6 +26,7 @@ pub enum Msg {
 pub enum Edit {
     Wunsch { idx: u8, projekt_id: ProjektId },
     Fest { value: bool },
+    Ignorieren { value: bool },
     Partner { value: String },
 }
 
@@ -371,6 +372,12 @@ impl Component for Schueler {
                 .data_property("fest")
                 .header_class("user-select-none")
                 .build(),
+            ColumnBuilder::new("ignorieren")
+                .orderable(true)
+                .short_name("Ignorieren")
+                .data_property("ignorieren")
+                .header_class("user-select-none")
+                .build(),
         ];
 
         fn get_wuensche(
@@ -402,6 +409,7 @@ impl Component for Schueler {
                 }),
                 partner_raw: schueler.partner_raw.clone(),
                 fest: schueler.fest.unwrap_or(false),
+                ignorieren: schueler.ignore,
             });
         }
 
@@ -450,6 +458,7 @@ impl Component for Schueler {
                             });
                         }
                         Edit::Fest { value } => schueler.fest = Some(value),
+                        Edit::Ignorieren { value } => schueler.ignore = value,
                         Edit::Partner { value } => {
                             schueler.partner = find_partner(&data.schueler, value)
                         }
@@ -479,6 +488,7 @@ pub struct SchuelerTableLine {
     pub partner: Option<(SchuelerId, String, Klasse)>,
     pub partner_raw: Option<String>,
     pub fest: bool,
+    pub ignorieren: bool,
 }
 
 impl PartialEq<Self> for SchuelerTableLine {
@@ -495,7 +505,8 @@ impl PartialOrd for SchuelerTableLine {
 
 #[derive(Properties, PartialEq)]
 struct CheckboxProps {
-    fest: bool,
+    value: bool,
+    object_key: AttrValue,
     schueler: SchuelerId,
 }
 
@@ -510,18 +521,23 @@ fn checkbox(props: &CheckboxProps) -> Html {
     let on_change = on_change.unwrap();
 
     let schueler_id = props.schueler;
+    let key = props.object_key.clone();
 
     let onchange = Callback::from(move |event: onchange::Event| {
         let event = event.target();
         if let Some(event) = event {
             let value = event.unchecked_into::<HtmlInputElement>().checked();
 
-            on_change.emit((schueler_id, Edit::Fest { value }))
+            if key == "fest" {
+                on_change.emit((schueler_id, Edit::Fest { value }))
+            } else if key == "ignorieren" {
+                on_change.emit((schueler_id, Edit::Ignorieren { value }))
+            }
         }
         // on_change.emit(schueler_id, Edit::Wunsch { idx: wunsch_idx, value: () });
     });
 
-    html! (<input type="checkbox" checked={props.fest} { onchange } />)
+    html! (<input type="checkbox" checked={props.value} { onchange } />)
 }
 
 #[derive(Properties, PartialEq)]
@@ -591,7 +607,10 @@ impl TableData for SchuelerTableLine {
                 html! (<Partner schueler={self.id} partner={self.partner.clone()} partner_raw={self.partner_raw.clone()} />),
             ),
             "fest" => Ok(html! {
-                <span><Checkbox fest={self.fest} schueler={self.id} /></span>
+                <span><Checkbox value={self.fest} object_key={"fest".to_string()} schueler={self.id} /></span>
+            }),
+            "ignorieren" => Ok(html! {
+                <span><Checkbox value={self.ignorieren} object_key={"ignorieren"} schueler={self.id} /></span>
             }),
             _ => Ok(html! {}),
         }
@@ -626,6 +645,7 @@ impl TableData for SchuelerTableLine {
                     .map(|project| Box::new(serde_value::Value::String(project))),
             )),
             "fest" => Ok(serde_value::Value::Bool(self.fest)),
+            "ignorieren" => Ok(serde_value::Value::Bool(self.ignorieren)),
             _ => Ok(serde_value::to_value(()).unwrap()),
         }
     }

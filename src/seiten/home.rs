@@ -215,10 +215,10 @@ impl Component for Home {
                 for zuordnung in zuordnungen {
                     let schueler = data.get_schueler(&zuordnung.schueler).unwrap();
 
-                    let projekt = data.get_projekt(&zuordnung.projekt.unwrap()).unwrap();
+                    let projekt = zuordnung.projekt.and_then(|p_id| data.get_projekt(&p_id));
 
                     csv_string += format!(
-                        "\n{};{} ({});{};{}: {} ({}-{})",
+                        "\n{};{} ({});{};{}",
                         zuordnung.id,
                         schueler.name,
                         schueler.klasse.klasse(),
