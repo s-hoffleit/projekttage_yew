@@ -34,7 +34,7 @@ impl From<SchuelerListeFile> for BTreeMap<SchuelerId, SaveFileSchueler> {
                     uid: str::parse(&schueler.id).expect("Falsche Schueler-UID"),
                     wishes: None,
                     partner_raw: None,
-                    ignore: false,
+                    ignore: true,
                     klasse: Klasse::new(schueler.gruppen.clone()),
                     partner: None,
                     fest: None,
