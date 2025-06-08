@@ -242,11 +242,16 @@ impl Component for Home {
                             .unwrap_or("---".to_string()),
                         zuordnung
                             .projekt
-                            .map(|p_id| p_id.id().to_string())
-                            .unwrap_or("--".to_string()),
-                        projekt.name,
-                        projekt.min_stufe,
-                        projekt.max_stufe
+                            .map_or("---".to_string(), |p_id| projekt.map_or(
+                                "---".to_string(),
+                                |p| format!(
+                                    "{}: {} ({}-{})",
+                                    p_id.id(),
+                                    p.name,
+                                    p.min_stufe,
+                                    p.max_stufe
+                                )
+                            )),
                     )
                     .as_str();
                 }
