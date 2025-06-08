@@ -70,10 +70,10 @@ fn project_selection(props: &ProjektSelectProps) -> Html {
     if let Some(data) = data {
         html! {
             <select id="wish_select" { onchange } >
+                <option value="-1" selected={ props.selected.is_none() || props.selected.map(|p_id| p_id.id()) == Some(u32::MAX) }> { "Kein Wunsch" } </option>
                 { for data.projekte.iter().map(|(p_id, projekt)| html! {
                     <option value={ format!("{}", p_id.id()) } selected={ props.selected == Some(*p_id) }> {format!("{p_id}: {}", projekt.name.clone())} </option>
                 })}
-                <option value="-1" selected={ props.selected.is_none() || props.selected.map(|p_id| p_id.id()) == Some(u32::MAX) }> { "Kein Wunsch" } </option>
             </select>
         }
     } else {
