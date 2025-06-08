@@ -413,6 +413,12 @@ impl TableData for EinteilungTableLine {
                     );
                 };
 
+                if wuensche.map(|w| w.id()) == [u32::MAX; 5] {
+                    return Ok(
+                        html! (<ProjektSelect selected={ self.projekt_id } schueler_id={ self.schueler_id } class="" />),
+                    );
+                }
+
                 let wunsch_idx = wuensche.iter().position(|w| Some(*w) == self.projekt_id);
 
                 Ok(
