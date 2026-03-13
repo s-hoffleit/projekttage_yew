@@ -3,6 +3,8 @@ name = "projekttage_yew"
 version = "0.1.0"
 edition = "2024"
 
+# I was here
+
 [dependencies]
 gloo = { version = "0.11.0", features = ["worker", "futures", "timers"] }
 gloo-console = "0.3.0"
