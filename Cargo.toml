@@ -6,15 +6,15 @@ edition = "2024"
 # I was here
 
 [dependencies]
-gloo = { version = "0.11.0", features = ["worker", "futures", "timers"] }
-gloo-console = "0.3.0"
-gloo-file = "0.3.0"
-gloo-storage = "0.3.0"
-good_lp = { version = "1.13.0", default-features = false, features = [
+gloo = { version = "0.12.0", features = ["worker", "futures", "timers"] }
+gloo-console = "0.4.0"
+gloo-file = "0.4.0"
+gloo-storage = "0.4.0"
+good_lp = { version = "1.15.2", default-features = false, features = [
     "microlp",
 ] }
-regex = "1.11.1"
-serde = "1.0.219"
+regex = "1.12.4"
+serde = "1.0.228"
 serde-value = "0.7.0"
 serde-wasm-bindgen = "0.6.5"
 serde_json = "1.0.140"

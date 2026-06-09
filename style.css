@@ -17,25 +17,25 @@
         min-height: 100vh;
     }
 
-    select {
+    /* select {
         @apply select;
-    }
+    } */
 
     label {
         @apply block mb-2 text-sm font-medium text-gray-900 dark:text-white;
     }
 
-    input[type="file"] {
+    /* input[type="file"] {
         @apply file-input;
-    }
+    } */
 
-    input[type="text"] {
+    /* input[type="text"] {
         @apply input;
-    }
+    } */
 
-    button {
+    /* button {
         @apply btn;
-    }
+    } */
 }
 
 @layer components {

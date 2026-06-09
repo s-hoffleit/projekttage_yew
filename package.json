@@ -1,0 +1,8 @@
+{
+  "dependencies": {
+    "@tailwindcss/cli": "^4.3.0",
+    "baseline-browser-mapping": "^2.10.35",
+    "caniuse-lite": "^1.0.30001797",
+    "tailwindcss": "^4.3.0"
+  }
+}
